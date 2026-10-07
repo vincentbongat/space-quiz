@@ -215,20 +215,35 @@
     ];
     const $ = (id) => document.getElementById(id);
     const welcome = $('welcome'), quiz = $('quiz'), results = $('results');
-    let index = 0, score = 0, locked = false;
+    let index = 0, score = 0, locked = false, runQuestions = [];
+    function shuffleQuestions(items) {
+      const shuffled = [...items];
+      for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+      }
+      return shuffled;
+    }
+    function startMission() {
+      index = 0;
+      score = 0;
+      runQuestions = shuffleQuestions(questions);
+      show(quiz);
+      renderQuestion();
+    }
     function show(view) { [welcome, quiz, results].forEach((el) => el.classList.add('hidden')); view.classList.remove('hidden'); }
     function renderQuestion() {
       locked = false;
-      const item = questions[index];
-      $('question-count').textContent = `Question ${index + 1} of ${questions.length}`;
+      const item = runQuestions[index];
+      $('question-count').textContent = `Question ${index + 1} of ${runQuestions.length}`;
       $('question').textContent = item.q;
       $('score').textContent = score;
-      $('progress').style.width = `${(index / questions.length) * 100}%`;
-      document.querySelector('[role="progressbar"]').setAttribute('aria-valuenow', index);
+      $('progress').style.width = `${(index / runQuestions.length) * 100}%`;
+      $('progress').parentElement.setAttribute('aria-valuenow', index);
       $('feedback').textContent = '';
       $('feedback').className = 'feedback';
       $('next').hidden = true;
-      $('next').innerHTML = index === questions.length - 1 ? 'See your results <span aria-hidden="true">→</span>' : 'Next question <span aria-hidden="true">→</span>';
+      $('next').innerHTML = index === runQuestions.length - 1 ? 'See your results <span aria-hidden="true">→</span>' : 'Next question <span aria-hidden="true">→</span>';
       const choices = $('answers');
       choices.replaceChildren();
       item.a.forEach((label, i) => {
@@ -247,7 +262,7 @@
     function choose(choice) {
       if (locked) return;
       locked = true;
-      const item = questions[index], buttons = [...$('answers').children], right = choice === item.correct;
+      const item = runQuestions[index], buttons = [...$('answers').children], right = choice === item.correct;
       buttons.forEach((button, i) => {
         button.disabled = true;
         if (i === item.correct) {
@@ -269,19 +284,19 @@
       show(results);
       results.classList.toggle('celebrating', score >= 8);
       $('result-title').focus({ preventScroll: true });
-      $('final-score').textContent = `${score} / ${questions.length} correct`;
-      $('result-progress').style.width = `${score * 10}%`;
+      $('final-score').textContent = `${score} / ${runQuestions.length} correct`;
+      $('result-progress').style.width = `${(score / runQuestions.length) * 100}%`;
       document.querySelector('.result-track').setAttribute('aria-valuenow', score);
       let emoji = '🚀', title = 'A cosmic explorer!', copy = 'You made it through the universe. Keep looking up!';
-      if (score === 10) { emoji = '🏆'; title = 'Out of this world!'; copy = 'A perfect mission! You really know your way around the cosmos.'; }
+      if (score === runQuestions.length) { emoji = '🏆'; title = 'Out of this world!'; copy = 'A perfect mission! You really know your way around the cosmos.'; }
       else if (score >= 7) { emoji = '🌟'; title = 'Stellar work!'; copy = 'The universe has no secrets from you. Almost a perfect orbit!'; }
       else if (score >= 4) { emoji = '🪐'; title = 'Nice journey!'; copy = 'You have a great start. There is always more to discover out there.'; }
       else { emoji = '🌙'; title = 'Keep exploring!'; copy = 'Every astronaut starts somewhere. Ready for another trip around the stars?'; }
       $('result-emoji').textContent = emoji; $('result-title').textContent = title; $('result-copy').textContent = copy;
     }
-    $('start').addEventListener('click', () => { index = 0; score = 0; show(quiz); renderQuestion(); });
-    $('next').addEventListener('click', () => { if (index < questions.length - 1) { index++; renderQuestion(); } else finish(); });
-    $('restart').addEventListener('click', () => { index = 0; score = 0; show(quiz); renderQuestion(); });
+    $('start').addEventListener('click', startMission);
+    $('next').addEventListener('click', () => { if (index < runQuestions.length - 1) { index++; renderQuestion(); } else finish(); });
+    $('restart').addEventListener('click', startMission);
   </script>
 </body>
 </html>
